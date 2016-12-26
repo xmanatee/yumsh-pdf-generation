@@ -1,0 +1,102 @@
+<?php
+
+/**
+ * @file
+ * A module for generating pdf diplomas for Yumsh olympiad participants.
+ */
+
+
+require_once("yumsh_diploma.php");
+
+
+function get_filename($student_details, $encrypt = false) {
+    $filename = $student_details['name'] . '_' .
+        $student_details['family'] . '_' .
+        $student_details['year'] . '_' .
+        $student_details['id_pupil'];
+
+    if ($encrypt) {
+        $filename = hash('sha256', $filename);
+        $filename = substr($filename, -8);
+    }
+    $filename .= '.pdf';
+    return $filename;
+}
+
+function generate_diploma_details($details) {
+    $phrases = array();
+    $phrases['success'] = 'успешное ';
+    if ($details['type'] == 'грамота') {
+        $phrases['type'] = 'Похвальная грамота';
+        $phrases['success'] = '';
+    } elseif ($details['type'] == 'Д1') {
+        $phrases['type'] = "Диплом\nI степени";
+    } elseif ($details['type'] == 'Д2') {
+        $phrases['type'] = "Диплом\nII степени";
+    } elseif ($details['type'] == 'Д3') {
+        $phrases['type'] = "Диплом\nIII степени";
+    }
+
+    $phrases['fullname'] = $details['family'] . ' ' . $details['name'];
+    $phrases['school_name'] = $details['school_name'];
+    $phrases['paral'] = $details['paral'] . ' класса';
+    if ($details['sex'] == 'м') {
+        $phrases['paral'] = 'ученик ' . $phrases['paral'];
+    } else {
+        $phrases['paral'] = 'ученица ' . $phrases['paral'];
+    }
+
+    $phrases['reason'] = "за " . $phrases['success'] . "выступление в ". $details["tour"] . " туре \n" .
+        "олимпиады Юношеской математической школы\n" .
+        "Санкт-Петербургского государственного университета\n" .
+        "среди " . $details['paral'] . " классов в " . $details['year'] . " году";
+
+    return $phrases;
+}
+
+
+function write_in_center($pdf, $text, $size) {
+    $pdf->SetFontSize($size);
+    $pdf->SetX($pdf->lMargin);
+    $pdf->Multicell(0, $size / 2.2, $text, 0, 'C');
+    $pdf->ln(1);
+    return $pdf;
+}
+
+
+function generate_diploma($student_details, $check_exists=true) {
+    $filename = get_filename($student_details);
+    if ($check_exists and file_exists('diplomas/'.$filename)) {
+        print("file already exists\n");
+        return $filename;
+    }
+    $pdf = new YUMSH_PDF();
+
+    $pdf->AddFont('DejaVuSansCondensed', '', 'DejaVuSansCondensed.ttf', true);
+    $pdf->AddFont('DejaVuSerifCondensed', '', 'DejaVuSerifCondensed.ttf', true);
+    $pdf->SetFont('DejaVuSerifCondensed', '', 20);
+
+    $pdf->AddPage();
+
+//    $pdf->SetTextColor(0, 0, 0);
+
+    $details = generate_diploma_details($student_details);
+
+    $pdf->SetY(81);
+    write_in_center($pdf, $details['type'], $pdf->BIG_FONT_SIZE);
+    $pdf->ln(-4);
+    write_in_center($pdf, 'награждается', $pdf->SMALL_FONT_SIZE);
+    $pdf->ln(3);
+    write_in_center($pdf, $details['fullname'], $pdf->BIG_FONT_SIZE);
+    $pdf->ln(-2);
+    write_in_center($pdf, $details['paral'], $pdf->SMALL_FONT_SIZE);
+    write_in_center($pdf, $details['school_name'], $pdf->SMALL_FONT_SIZE);
+    $pdf->ln(5);
+    write_in_center($pdf, $details['reason'], $pdf->SMALL_FONT_SIZE);
+
+    $pdf->Output('diplomas/'.$filename);
+
+    return $filename;
+}
+
+?>

@@ -1,0 +1,197 @@
+<?php
+
+/**
+ * @file
+ * A module for generating pdf invites for Yumsh olympiad participants.
+ */
+
+
+require_once("invite.php");
+require_once("fpdf_html_writer.php");
+
+
+function get_filename($student_details, $encrypt = false) {
+    $filename = $student_details['name'] . '_' .
+        $student_details['family'] . '_' .
+        $student_details['year'] . '_' .
+        $student_details['id_pupil'];
+
+    if ($encrypt) {
+        $filename = hash('sha256', $filename);
+        $filename = substr($filename, -8);
+    }
+    $filename .= '.pdf';
+    return $filename;
+}
+
+function generate_invite_details($details) {
+
+    if (4 <= $details['paral'] && $details['paral'] <= 8) {
+        $date = '26 ноября';
+        $problem_sets = array(7,);
+    } elseif (9 <= $details['paral'] && $details['paral'] <= 11) {
+        $date = '17 декабря';
+        $problem_sets = array(4, 4, 4);// array(4, 4, 4);
+    } else {
+        throw new Exception('Parallel ' . $details['paral'] . 'is out of range 4-11');
+    }
+
+    if ($details['paral'] == 8) {
+        $address = '14 линия Васильевского острова, дом 29';
+    } else {
+        $address = 'Средний пр. Васильевского острова, дом 41‒43';
+    }
+
+    $link='https://docs.google.com/forms/d/e/1FAIpQLScLvQo2xpTur5gYlw0bdMNm2d-TIzi13sD0OZjfwojGXcSs3g/viewform';
+
+    $phrases = array();
+
+    $phrases['1_paragraph'] = '      Поздравляем Вас с успешным выступлением в I туре олимпиады '
+        .'Юношеской математической школы и приглашаем Вас принять участие во втором туре '
+        .'олимпиады. Пожалуйста, не забудьте заранее зарегистрироваться для участия в олимпиаде по '
+        .'<A HREF="' . $link . '">ссылке.</A>';
+
+    $phrases['2_paragraph'] = '      Второй тур состоится <B>' . $date . '</B> в Санкт-Петербургском '
+        .'государственном университете по адресу: <B>' . $address . '</B>. Это приглашение '
+        .'является Вашим пропуском на олимпиаду. Начало олимпиады в <B>11:00</B>.';
+
+    $phrases['3_paragraph'] = '      Предупреждаем, что использовать во время олимпиады справочники, калькуляторы, '
+        .'мобильные телефоны, смартфоны и т.п. запрещено.';
+
+    $phrases['4_centered'] = 'Желаем успеха!';
+
+    $phrases['5_centered'] = 'Карточка участника II тура';
+
+    $phrases['6_centered'] = $details['family'] . ' ' . $details['name'];
+
+    $phrases['7_centered'] = $details['paral'] . ' класс  ' . $details['school_name'];
+
+    $phrases['8_centered'] = 'Результаты выступления на II туре';
+
+    $phrases['tables'] = $problem_sets;
+
+    return $phrases;
+}
+
+
+function write_in_center($pdf, $text, $size, $style = "") {
+    $pdf->SetFontSize($size);
+    $pdf->SetX($pdf->lMargin);
+    $pdf->SetFont('DejaVuSerifCondensed', $style);
+    $pdf->Multicell(0, $size / 3, $text, 0, 'C');
+    $pdf->SetFont('DejaVuSerifCondensed', "");
+    $pdf->ln();
+    return $pdf;
+}
+
+
+function write_paragraph($pdf, $text, $size) {
+    $pdf->SetFontSize($size);
+    $pdf->SetX($pdf->lMargin);
+    (new FpdfHmtlWriter())->WriteHtml($pdf, $text);
+//    $pdf->Multicell(0, $size / 2.2, $text, 0);
+    $pdf->ln();
+    return $pdf;
+}
+
+// Better table
+function write_table($pdf, $tables) {
+    $tables_side_margin = $pdf->lMargin;
+    $tables_between_margin = 4;
+    $num_cells = array_sum($tables);
+    $w = ($pdf->w - 2 * $tables_side_margin - $tables_between_margin * (count($tables) - 1)) / $num_cells;
+
+    // Header
+    $pdf->SetX($tables_side_margin);
+    for ($itable = 0; $itable < count($tables); $itable++) {
+        $table = $tables[$itable];
+        for ($icell = 0; $icell < $table; $icell++) {
+            $txt = "" . ($icell + 1);
+            if (count($tables) > 1) {
+                $txt = ($itable + 1) . "." . $txt;
+            }
+            $pdf->Cell($w, 7, $txt, 1, 0, 'C');
+        }
+        $pdf->SetX($pdf->GetX() + $tables_between_margin);
+    }
+    $pdf->Ln();
+
+    // Empty Cells
+    $pdf->SetX($tables_side_margin);
+    for ($itable = 0; $itable < count($tables); $itable++) {
+        $table = $tables[$itable];
+        for ($icell = 0; $icell < $table; $icell++) {
+            $txt = ($itable + 1) . "." . ($icell + 1);
+            $pdf->Cell($w, 12, " ", 1, 0, 'C');
+        }
+        $pdf->SetX($pdf->GetX() + $tables_between_margin);
+    }
+    $pdf->Ln();
+}
+
+function write_in_rect($pdf, $x, $y, $w, $h, $text, $size, $style) {
+    $pdf->SetFontSize($size);
+    $pdf->SetXY($x, $y);
+    $pdf->SetFont('DejaVuSerifCondensed', $style);
+    $pdf->Multicell($w, $h, $text, 1, 'C');
+    $pdf->SetFont('DejaVuSerifCondensed', "");
+    $pdf->ln();
+    return $pdf;
+}
+
+
+function generate_invite($student_details, $check_exists = true) {
+    $filename = get_filename($student_details);
+    if ($check_exists and file_exists('invites/'.$filename)) {
+        print("file already exists\n");
+        return $filename;
+    }
+    $pdf = new INVITE_PDF();
+
+//    $pdf->AddFont('DejaVuSansCondensed', '', 'DejaVuSansCondensed.ttf', true);
+    $pdf->AddFont('DejaVuSerifCondensed', '', 'DejaVuSerifCondensed.ttf', true);
+    $pdf->AddFont('DejaVuSerifCondensed', 'B', 'DejaVuSerifCondensed-Bold.ttf', true);
+    $pdf->AddFont('DejaVuSerifCondensed', 'I', 'DejaVuSerifCondensed-Italic.ttf', true);
+    $pdf->AddFont('DejaVuSerifCondensed', 'BI', 'DejaVuSerifCondensed-BoldItalic.ttf', true);
+    $pdf->SetFont('DejaVuSerifCondensed', '', 10);
+
+    $pdf->AddPage();
+
+//    $pdf->SetTextColor(0, 0, 0);
+
+    $details = generate_invite_details($student_details);
+
+    write_in_rect($pdf, 176, 9, 24, 25, $student_details['paral'], 35, 'B');
+
+    $pdf->SetY(36);
+//    write_in_center($pdf, $details['1_paragraph'], $pdf->BIG_FONT_SIZE);
+    write_paragraph($pdf, $details['1_paragraph'], $pdf->SMALL_FONT_SIZE);
+    write_paragraph($pdf, $details['2_paragraph'], $pdf->SMALL_FONT_SIZE);
+    write_paragraph($pdf, $details['3_paragraph'], $pdf->SMALL_FONT_SIZE);
+//    write_in_center($pdf, $details['4_centered'], $pdf->SMALL_FONT_SIZE + 3, "I");
+
+    $pdf->ln(4);
+    $pdf->Line($pdf->lMargin, $pdf->GetY(), $pdf->w - $pdf->lMargin, $pdf->GetY());  //Set the line
+    $pdf->ln(2);
+
+    write_in_center($pdf, $details['5_centered'], $pdf->SMALL_FONT_SIZE + 3, "B");
+    $pdf->ln(-2);
+    write_in_center($pdf, $details['6_centered'], $pdf->SMALL_FONT_SIZE + 3, "B");
+    $pdf->ln(-2);
+    write_in_center($pdf, $details['7_centered'], $pdf->SMALL_FONT_SIZE + 3, "B");
+    $pdf->ln(-2);
+    write_in_center($pdf, $details['8_centered'], $pdf->SMALL_FONT_SIZE, "B");
+    $pdf->ln(-2);
+
+//    echo count($details['tables']);
+    write_table($pdf, $details['tables']);
+
+    $pdf->Line(1, $pdf->h / 2, $pdf->w - 1, $pdf->h / 2);  //Set the line
+    $pdf->ln(2);
+
+    $pdf->Output('invites/'.$filename);
+
+    return $filename;
+}
+
+

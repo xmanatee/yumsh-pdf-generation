@@ -4,14 +4,13 @@ require_once("diploma.module");
 
 function testGenerateDiploma() {
     $student_details = array(
-        'id_pupil' => '124',
+        'id_pupil' => 124,
         'name' => 'Михаил',
         'family' => 'Немилов',
-        'paral' => '11',
-        'year' => '2016',
+        'paral' => 11,
+        'year' => 2016,
         'school_name' => 'Президентского физико-математического лицея № 239',
         'district' => 'Кировского района',
-
         'sex' => 'м',
         'type' => 'Д1',
         'tour' => 'отборочном (заочном)'
@@ -22,6 +21,5 @@ function testGenerateDiploma() {
 }
 
 testGenerateDiploma();
-
 
 ?>

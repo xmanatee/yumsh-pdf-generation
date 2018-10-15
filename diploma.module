@@ -6,7 +6,7 @@
  */
 
 
-require_once("yumsh_diploma.php");
+require_once("diploma.php");
 
 
 function get_filename($student_details, $encrypt = false) {
@@ -70,7 +70,7 @@ function generate_diploma($student_details, $check_exists=true) {
         print("file already exists\n");
         return $filename;
     }
-    $pdf = new YUMSH_PDF();
+    $pdf = new DIPLOMA_PDF();
 
     $pdf->AddFont('DejaVuSansCondensed', '', 'DejaVuSansCondensed.ttf', true);
     $pdf->AddFont('DejaVuSerifCondensed', '', 'DejaVuSerifCondensed.ttf', true);

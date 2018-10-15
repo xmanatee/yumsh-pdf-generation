@@ -6,15 +6,15 @@ require_once("fpdf/src/tfpdf.php");
 require_once("fpdf/src/fpdf_tpl.php");
 require_once("fpdf/src/fpdi.php");
 
-class YUMSH_PDF extends fpdi\FPDI {
+class INVITE_PDF extends fpdi\FPDI {
     protected $_tplIdx;
 
     public $BIG_FONT_SIZE = 40;
-    public $SMALL_FONT_SIZE = 16;
+    public $SMALL_FONT_SIZE = 12;
 
     public function Header() {
         if (is_null($this->_tplIdx)) {
-            $this->setSourceFile('assets/template_1.pdf');
+            $this->setSourceFile('assets/invite_template.pdf');
             $this->_tplIdx = $this->importPage(1);
         }
 

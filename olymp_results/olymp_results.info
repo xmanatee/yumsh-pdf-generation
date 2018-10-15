@@ -1,5 +1,0 @@
-name = YuMSh Olympiad Results
-description = Allows users to query the olympiad results.
-core = 7.x
-
-configure = admin/config/content/olymp_results

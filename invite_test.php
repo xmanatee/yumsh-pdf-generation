@@ -24,7 +24,7 @@ function test_generate_invite_2() {
     $student_details = array(
         'name' => 'Иван',
         'family' => 'Иванов',
-        'paral' => 7,
+        'paral' => 8,
         'school_name' => '39 школы',
     );
 

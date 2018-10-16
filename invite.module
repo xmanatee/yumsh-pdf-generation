@@ -51,7 +51,7 @@ function generate_invite_details($details) {
         .'олимпиады. Пожалуйста, не забудьте заранее зарегистрироваться для участия в олимпиаде по '
         .'<A HREF="' . $link . '">ссылке.</A>';
 
-    $phrases['2_paragraph'] = '      Второй тур состоится <B>' . $date . '</B> в Санкт-Петербургском '
+    $phrases['2_paragraph'] = '      II тур состоится <B>в воскресенье ' . $date . '</B> в Санкт-Петербургском '
         .'государственном университете по адресу: <B>' . $address . '</B>. Это приглашение '
         .'является Вашим пропуском на олимпиаду. Начало олимпиады в <B>11:00</B>.';
 
@@ -69,6 +69,8 @@ function generate_invite_details($details) {
     $phrases['8_centered'] = 'Результаты выступления на II туре';
 
     $phrases['tables'] = $problem_sets;
+
+    $phrases['number'] = '№' . '1234';
 
     return $phrases;
 }
@@ -110,7 +112,7 @@ function write_table($pdf, $tables) {
             if (count($tables) > 1) {
                 $txt = ($itable + 1) . "." . $txt;
             }
-            $pdf->Cell($w, 7, $txt, 1, 0, 'C');
+            $pdf->Cell($w, 6, $txt, 1, 0, 'C');
         }
         $pdf->SetX($pdf->GetX() + $tables_between_margin);
     }
@@ -122,7 +124,7 @@ function write_table($pdf, $tables) {
         $table = $tables[$itable];
         for ($icell = 0; $icell < $table; $icell++) {
             $txt = ($itable + 1) . "." . ($icell + 1);
-            $pdf->Cell($w, 12, " ", 1, 0, 'C');
+            $pdf->Cell($w, 16, " ", 1, 0, 'C');
         }
         $pdf->SetX($pdf->GetX() + $tables_between_margin);
     }
@@ -130,11 +132,15 @@ function write_table($pdf, $tables) {
 }
 
 function write_in_rect($pdf, $x, $y, $w, $h, $text, $size, $style) {
+//    $pdf->SetLineWidth(1);
     $pdf->SetFontSize($size);
     $pdf->SetXY($x, $y);
     $pdf->SetFont('DejaVuSerifCondensed', $style);
+
     $pdf->Multicell($w, $h, $text, 1, 'C');
+
     $pdf->SetFont('DejaVuSerifCondensed', "");
+//    $pdf->SetLineWidth(0.3);
     $pdf->ln();
     return $pdf;
 }
@@ -180,11 +186,13 @@ function generate_invite($student_details, $check_exists = true) {
     $pdf->ln(-2);
     write_in_center($pdf, $details['7_centered'], $pdf->SMALL_FONT_SIZE + 3, "B");
     $pdf->ln(-2);
-    write_in_center($pdf, $details['8_centered'], $pdf->SMALL_FONT_SIZE, "B");
+    write_in_center($pdf, $details['8_centered'], $pdf->SMALL_FONT_SIZE - 1, "B");
     $pdf->ln(-2);
 
 //    echo count($details['tables']);
     write_table($pdf, $details['tables']);
+
+    write_in_rect($pdf, 176, 90, 24, 12, $details['number'], 14, 'B');
 
     $pdf->Line(1, $pdf->h / 2, $pdf->w - 1, $pdf->h / 2);  //Set the line
     $pdf->ln(2);

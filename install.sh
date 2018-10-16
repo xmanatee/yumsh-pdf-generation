@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#brew install composer \
 sudo apt-get install composer \
     && mkdir temp \
     && cd temp \
